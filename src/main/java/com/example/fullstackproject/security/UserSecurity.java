@@ -14,13 +14,10 @@ import java.util.stream.Collectors;
 public class UserSecurity implements UserDetails {
 
     private User user;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return user
-                .getRoles()
-                .stream()
-                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
-                .collect(Collectors.toSet());
+        return user.getRoles();
     }
 
     @Override

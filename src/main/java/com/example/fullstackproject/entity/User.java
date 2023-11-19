@@ -1,20 +1,22 @@
 package com.example.fullstackproject.entity;
 
 import com.example.fullstackproject.enums.Status;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Cascade;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
-import static org.hibernate.annotations.CascadeType.PERSIST;
-import static org.hibernate.annotations.CascadeType.REMOVE;
+import static org.hibernate.annotations.CascadeType.ALL;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -22,29 +24,29 @@ import static org.hibernate.annotations.CascadeType.REMOVE;
 public class User implements Serializable {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstname;
-    @Column(name = "last_name", nullable = false)
-    private String lastname;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
     @Column(name = "password", nullable = false)
     private String password;
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    @Cascade({REMOVE})
     private Set<Role> roles;
+
+    @OneToMany(mappedBy = "createdUser")
+    @Cascade(ALL)
+    @JsonIgnore
+    private List<Post> posts;
 }

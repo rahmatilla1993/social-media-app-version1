@@ -1,22 +1,18 @@
 package com.example.fullstackproject.service;
 
 import com.example.fullstackproject.dto.PostDto;
-import com.example.fullstackproject.entity.ImageModel;
 import com.example.fullstackproject.entity.Post;
 import com.example.fullstackproject.entity.User;
 import com.example.fullstackproject.exception.ObjectNotFoundException;
 import com.example.fullstackproject.payload.response.ApiResponse;
-import com.example.fullstackproject.repository.ImageRepository;
 import com.example.fullstackproject.repository.PostRepository;
 import com.example.fullstackproject.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,21 +23,17 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class PostService {
 
-    @Value("${uploaded-path}")
-    private String uploadPath;
-
     private final PostRepository postRepository;
+    private final ImageService imageService;
     private final Utils utils;
-    private final ImageRepository imageRepository;
 
     @Autowired
     public PostService(PostRepository postRepository,
-                       ImageRepository imageRepository,
-                       Utils utils
+                       ImageService imageService, Utils utils
     ) {
         this.postRepository = postRepository;
+        this.imageService = imageService;
         this.utils = utils;
-        this.imageRepository = imageRepository;
     }
 
     public List<Post> getAll(String title, String tag, String order) {
@@ -70,13 +62,15 @@ public class PostService {
     }
 
     @Transactional
-    public Post createPost(PostDto postDto) {
+    public Post createPost(MultipartFile multipartFile, PostDto postDto) throws IOException {
         String[] tags = postDto.getTags().split(", ");
         User user = utils.getUser();
+        String imageUrl = imageService.uploadImage(multipartFile);
         Post post = new Post();
         post.setText(postDto.getContent());
         post.setTitle(postDto.getTitle());
         post.setTags(Arrays.asList(tags));
+        post.setImageUrl(imageUrl);
         post.setViewsCount(0);
         post.setCreatedUser(user);
         post.setCreatedDateTime(LocalDateTime.now());
@@ -84,9 +78,15 @@ public class PostService {
     }
 
     @Transactional
-    public Post editPost(PostDto postDto, int postId) {
+    public Post editPost(MultipartFile multipartFile, PostDto postDto, int postId) throws IOException {
         Post post = getPostById(postId);
         String[] tags = postDto.getTags().split(", ");
+        if (multipartFile != null) {
+            String imageUrlFromDb = post.getImageUrl();
+            imageService.deleteImage(imageUrlFromDb);
+            String imageUrl = imageService.uploadImage(multipartFile);
+            post.setImageUrl(imageUrl);
+        }
         post.setTags(Arrays.asList(tags));
         post.setText(postDto.getContent());
         post.setTitle(postDto.getTitle());
@@ -94,26 +94,15 @@ public class PostService {
     }
 
     @Transactional
-    public ApiResponse deletePost(int postId) {
+    public ApiResponse deletePost(int postId) throws IOException {
         User user = utils.getUser();
-        Path path = Path.of(uploadPath);
         Post userPost = user.getPosts()
                 .stream()
                 .filter(post -> post.getId() == postId)
                 .findFirst()
                 .orElseThrow(() -> new ObjectNotFoundException("Post not found"));
-        Optional<ImageModel> optionalImageModel = imageRepository
-                .findByImagePost(userPost);
-        if (optionalImageModel.isPresent()) {
-            ImageModel imageModel = optionalImageModel.get();
-            imageRepository.delete(imageModel);
-            try {
-                Files.delete(path.resolve(imageModel.getGeneratedName()));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
         user.getPosts().remove(userPost);
+        imageService.deleteImage(userPost.getImageUrl());
         postRepository.delete(userPost);
         return new ApiResponse("Post deleted", true);
     }

@@ -29,6 +29,7 @@ public class Post {
     private String title;
     private String text;
     private int viewsCount;
+    private String imageUrl;
 
     @ElementCollection(targetClass = String.class)
     @CollectionTable(

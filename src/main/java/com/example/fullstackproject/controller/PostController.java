@@ -10,7 +10,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -25,12 +27,14 @@ public class PostController {
     }
 
     @GetMapping
-    public HttpEntity<List<Post>> getAll(@RequestParam(value = "title", required = false) String title,
-                                         @RequestParam(value = "tag", required = false) String tag,
-                                         @RequestParam(value = "order", required = false) String order
+    public HttpEntity<List<Post>> getAll(
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "tag", required = false) String tag,
+            @RequestParam(value = "order", required = false) String order
     ) {
-        return ResponseEntity.
-                ok(postService.getAll(title, tag, order));
+        return ResponseEntity.ok(
+                postService.getAll(title, tag, order)
+        );
     }
 
     @GetMapping("/{postId}")
@@ -40,23 +44,29 @@ public class PostController {
         );
     }
 
-    @PostMapping("/add")
-    public HttpEntity<?> createPost(@RequestBody PostDto postDto) {
+    @PostMapping(value = "/add")
+    public HttpEntity<?> createPost(
+            @RequestPart("file") MultipartFile multipartFile,
+            @RequestPart("data") PostDto postDto
+    ) throws IOException {
         return ResponseEntity.ok(
-                postService.createPost(postDto)
+                postService.createPost(multipartFile, postDto)
         );
     }
 
     @PutMapping("/{postId}/edit")
-    public HttpEntity<?> editPost(@RequestBody PostDto postDto,
-                                  @PathVariable("postId") int postId) {
+    public HttpEntity<?> editPost(
+            @RequestPart(value = "file", required = false) MultipartFile multipartFile,
+            @RequestPart("data") PostDto postDto,
+            @PathVariable("postId") int postId
+    ) throws IOException {
         return ResponseEntity.ok(
-                postService.editPost(postDto, postId)
+                postService.editPost(multipartFile, postDto, postId)
         );
     }
 
     @DeleteMapping("/{postId}/delete")
-    public HttpEntity<?> deletePost(@PathVariable("postId") int postId) {
+    public HttpEntity<?> deletePost(@PathVariable("postId") int postId) throws IOException {
         return ResponseEntity.ok(
                 postService.deletePost(postId)
         );

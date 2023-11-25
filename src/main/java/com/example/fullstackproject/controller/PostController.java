@@ -79,6 +79,13 @@ public class PostController {
         );
     }
 
+    @GetMapping("/{postId}/like")
+    public HttpEntity<?> likePost(@PathVariable("postId") int postId) {
+        return ResponseEntity.ok(
+                postService.likePost(postId)
+        );
+    }
+
     @ExceptionHandler
     public HttpEntity<?> handleException(ObjectNotFoundException e) {
         return ResponseEntity

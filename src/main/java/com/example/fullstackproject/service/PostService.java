@@ -94,6 +94,22 @@ public class PostService {
     }
 
     @Transactional
+    public Post likePost(int postId) {
+        User user = utils.getUser();
+        Post post = postRepository
+                .findById(postId)
+                .orElseThrow(() -> new ObjectNotFoundException("Post not found"));
+        if (post.getLikedUsers().contains(user.getEmail())) {
+            post.setLikes(post.getLikes() - 1);
+            post.getLikedUsers().remove(user.getEmail());
+        } else {
+            post.setLikes(post.getLikes() + 1);
+            post.getLikedUsers().add(user.getEmail());
+        }
+        return post;
+    }
+
+    @Transactional
     public ApiResponse deletePost(int postId) throws IOException {
         User user = utils.getUser();
         Post userPost = user.getPosts()

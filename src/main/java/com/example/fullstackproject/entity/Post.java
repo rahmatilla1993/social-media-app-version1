@@ -9,7 +9,9 @@ import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.hibernate.annotations.CascadeType.ALL;
 import static org.hibernate.annotations.CascadeType.DELETE;
@@ -30,6 +32,14 @@ public class Post {
     private String text;
     private int viewsCount;
     private String imageUrl;
+    private int likes = 0;
+
+    @ElementCollection(targetClass = String.class)
+    @CollectionTable(
+            name = "post_liked_user",
+            joinColumns = @JoinColumn(name = "post_id")
+    )
+    private Set<String> likedUsers = new HashSet<>();
 
     @ElementCollection(targetClass = String.class)
     @CollectionTable(
